@@ -12,8 +12,16 @@ $conn = $objDb->connect();
 $method = $_SERVER['REQUEST_METHOD'];
 switch($method) {
     case "GET":
-        $sql = "SELECT * FROM recordings";
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
+        $offset = ($page - 1) * $pageSize;
+        /*
+         * LIMIT X specifies that you want to retrieve a maximum of X rows.
+         * OFFSET Y specifies that you want to start from the Yth row (since the offset is 0-based). 
+         */
+        $sql = "SELECT * FROM recordings LIMIT $pageSize OFFSET $offset";
         $path = explode('/', $_SERVER['REQUEST_URI']);
+
         if(isset($path[3]) && is_numeric($path[3])) {
             $sql .= " WHERE id = :id";
             $stmt = $conn->prepare($sql);
