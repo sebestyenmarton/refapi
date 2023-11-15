@@ -15,10 +15,8 @@ switch($method) {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
         $offset = ($page - 1) * $pageSize;
-        /*
-         * LIMIT X specifies that you want to retrieve a maximum of X rows.
-         * OFFSET Y specifies that you want to start from the Yth row (since the offset is 0-based). 
-         */
+        
+        // Retrieve records
         $sql = "SELECT * FROM recordings LIMIT $pageSize OFFSET $offset";
         $path = explode('/', $_SERVER['REQUEST_URI']);
 
@@ -34,57 +32,28 @@ switch($method) {
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        echo json_encode($users);
-        break;
-    case "POST":
-        $user = json_decode( file_get_contents('php://input') );
-        $sql = "INSERT INTO recordings(id, name, email, mobile, created_at) VALUES(null, :name, :email, :mobile, :created_at)";
-        $stmt = $conn->prepare($sql);
-        $created_at = date('Y-m-d');
-        $stmt->bindParam(':name', $user->name);
-        $stmt->bindParam(':email', $user->email);
-        $stmt->bindParam(':mobile', $user->mobile);
-        $stmt->bindParam(':created_at', $created_at);
+        // Return records along with total count
+        $totalRecords = getTotalRecordCount($conn);
+        $response = [
+            'totalRecords' => $totalRecords,
+            'records' => $users,
+        ];
 
-        if($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record created successfully.'];
-        } else {
-            $response = ['status' => 0, 'message' => 'Failed to create record.'];
-        }
         echo json_encode($response);
         break;
 
-    case "PUT":
-        $user = json_decode( file_get_contents('php://input') );
-        $sql = "UPDATE recordings SET name= :name, email =:email, mobile =:mobile, updated_at =:updated_at WHERE id = :id";
-        $stmt = $conn->prepare($sql);
-        $updated_at = date('Y-m-d');
-        $stmt->bindParam(':id', $user->id);
-        $stmt->bindParam(':name', $user->name);
-        $stmt->bindParam(':email', $user->email);
-        $stmt->bindParam(':mobile', $user->mobile);
-        $stmt->bindParam(':updated_at', $updated_at);
+    // Other cases...
 
-        if($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record updated successfully.'];
-        } else {
-            $response = ['status' => 0, 'message' => 'Failed to update record.'];
-        }
-        echo json_encode($response);
-        break;
-
-    case "DELETE":
-        $sql = "DELETE FROM recordings WHERE id = :id";
-        $path = explode('/', $_SERVER['REQUEST_URI']);
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':id', $path[3]);
-
-        if($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record deleted successfully.'];
-        } else {
-            $response = ['status' => 0, 'message' => 'Failed to delete record.'];
-        }
-        echo json_encode($response);
-        break;
+    default:
+        http_response_code(405); // Method Not Allowed
+        echo json_encode(['error' => 'Method Not Allowed']);
 }
+
+function getTotalRecordCount($conn) {
+    // Function to retrieve the total count of records in the table
+    $countQuery = "SELECT COUNT(*) as total FROM recordings";
+    $countResult = $conn->query($countQuery);
+    $countData = $countResult->fetch(PDO::FETCH_ASSOC);
+    return $countData['total'];
+}
+?>
