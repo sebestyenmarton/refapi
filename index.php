@@ -13,36 +13,36 @@ $conn = $objDb->connect();
 
 $method = $_SERVER['REQUEST_METHOD'];
 switch($method) {
-    case "GET":
-      $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-      $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
-      $offset = ($page - 1) * $pageSize;
-      
-      // Retrieve records
-      $sql = "SELECT * FROM recordings LIMIT $pageSize OFFSET $offset";
-      $path = explode('/', $_SERVER['REQUEST_URI']);
+  case "GET":
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
+    $offset = ($page - 1) * $pageSize;
 
-      if(isset($path[3]) && is_numeric($path[3])) {
-          $sql .= " WHERE id = :id";
-          $stmt = $conn->prepare($sql);
-          $stmt->bindParam(':id', $path[3]);
-          $stmt->execute();
-          $users = $stmt->fetch(PDO::FETCH_ASSOC);
-      } else {
-          $stmt = $conn->prepare($sql);
-          $stmt->execute();
-          $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      }
+    // Retrieve records in descending order based on the datum column
+    $sql = "SELECT * FROM recordings ORDER BY datum DESC LIMIT $pageSize OFFSET $offset";
+    $path = explode('/', $_SERVER['REQUEST_URI']);
 
-      // Return records along with total count
-      $totalRecords = getTotalRecordCount($conn);
-      $response = [
-          'totalRecords' => $totalRecords,
-          'records' => $users,
-      ];
+    if(isset($path[3]) && is_numeric($path[3])) {
+        $sql .= " WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $path[3]);
+        $stmt->execute();
+        $users = $stmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-      echo json_encode($response);
-      break;
+    // Return records along with total count
+    $totalRecords = getTotalRecordCount($conn);
+    $response = [
+        'totalRecords' => $totalRecords,
+        'records' => $users,
+    ];
+
+    echo json_encode($response);
+    break;
 
     case "POST":
       $input = json_decode(file_get_contents('php://input'), true);
