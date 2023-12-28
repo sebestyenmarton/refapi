@@ -7,6 +7,7 @@ header("Access-Control-Allow-Origin: http://localhost:3000");
 header("Access-Control-Allow-Methods: GET, PUT, POST, DELETE, PATCH, OPTIONS");
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 header("Access-Control-Allow-Credentials: true");
+header('Content-Type: application/json');
 
 include 'database-connection.php';
 $objDb = new DatabaseConnect;
@@ -15,20 +16,23 @@ $conn = $objDb->connect();
 $method = $_SERVER['REQUEST_METHOD'];
 switch($method) {
   case "GET":
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
+    $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+    $pageSize = isset($_GET['pageSize']) && is_numeric($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
     $offset = ($page - 1) * $pageSize;
     // Retrieve records in descending order based on the datum column
-    $sql = "SELECT * FROM recordings ORDER BY datum DESC LIMIT $pageSize OFFSET $offset";
+    $sql = "SELECT * FROM recordings";
     $path = explode('/', $_SERVER['REQUEST_URI']);
-    if(isset($path[3]) && is_numeric($path[3])) {
+    if (isset($path[3]) && is_numeric($path[3])) {
         $sql .= " WHERE id = :id";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':id', $path[3]);
         $stmt->execute();
         $users = $stmt->fetch(PDO::FETCH_ASSOC);
     } else {
+        $sql .= " ORDER BY datum DESC LIMIT :pageSize OFFSET :offset";
         $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':pageSize', $pageSize, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

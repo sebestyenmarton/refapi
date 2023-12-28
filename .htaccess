@@ -1,8 +1,12 @@
 RewriteEngine On
 
 # Handle to HTTPS
-#RewriteCond %{HTTPS} off
-#RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Serve HTML for specific paths
+RewriteRule ^felvetelek/.*$ index.html [L]
+# Add more paths as needed
 
 # Handle Front Controller...
 RewriteCond %{REQUEST_FILENAME} !-d
