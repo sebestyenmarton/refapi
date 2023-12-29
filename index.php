@@ -36,13 +36,21 @@ switch($method) {
         $stmt->execute();
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    // Return records along with total count
-    $totalRecords = getTotalRecordCount($conn);
-    $response = [
-        'totalRecords' => $totalRecords,
-        'records' => $users,
-    ];
-    echo json_encode($response);
+
+    // Check if JSON is accepted
+    if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+        // Return records along with total count
+        $totalRecords = getTotalRecordCount($conn);
+        $response = [
+            'totalRecords' => $totalRecords,
+            'records' => $users,
+        ];
+        header('Content-Type: application/json');
+        echo json_encode($response);
+    } else {
+        // HTML response for page loading
+        echo '<html><head></head><body><h1>HTML response for page loading</h1></body></html>';
+    }
     break;
     
 
