@@ -5,13 +5,16 @@
 	class DatabaseConnect {
   /**
    * For live enviroment:
+   * private $server = 'localhost';
+   * private $dbname = 'reftarka_client';
 	 * private $user = 'reftarka_database';
 	 * private $pass = 'reftarka_database';
    *
    * For Local enviroment:
-	 * private $user = 'root';
+   * private $server = 'localhost';
+   * private $dbname = 'reftarka_client';
+   * private $user = 'root';
    * private $pass = '';
-   * 
    **/
 		private $server = 'localhost';
 		private $dbname = 'reftarka_client';

@@ -19,22 +19,34 @@ switch($method) {
         $pageSize = isset($_GET['pageSize']) && is_numeric($_GET['pageSize']) ? (int)$_GET['pageSize'] : 10; // Default to 10 records per page
         $offset = ($page - 1) * $pageSize;
         
-        $sql = "SELECT * FROM recordings";
-        $path = explode('/', $_SERVER['REQUEST_URI']);
-        if (isset($path[3]) && is_numeric($path[3])) {
-            $sql .= " WHERE id = :id";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':id', $path[3]);
-            $stmt->execute();
-            $users = $stmt->fetch(PDO::FETCH_ASSOC);
-        } else {
-            $sql .= " ORDER BY datum DESC LIMIT :pageSize OFFSET :offset";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':pageSize', $pageSize, PDO::PARAM_INT);
-            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-            $stmt->execute();
-            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "SELECT * FROM recordings WHERE 1"; // Start the query
+
+        // Check if category and subcategory are provided and not empty
+        if (isset($_GET['category']) && !empty($_GET['category']) && $_GET['category'] !== 'Összes') {
+            $sql .= " AND tipus = :category";
         }
+
+        if (isset($_GET['subcategory']) && !empty($_GET['subcategory'])) {
+            $sql .= " AND kategoria = :subcategory";
+        }
+
+        // Continue with the rest of your query...
+        $sql .= " ORDER BY datum DESC LIMIT :pageSize OFFSET :offset";
+        $stmt = $conn->prepare($sql);
+
+        // Bind parameters if they are set
+        if (isset($_GET['category']) && !empty($_GET['category']) && $_GET['category'] !== 'Összes') {
+            $stmt->bindParam(':category', $_GET['category']);
+        }
+
+        if (isset($_GET['subcategory']) && !empty($_GET['subcategory'])) {
+            $stmt->bindParam(':subcategory', $_GET['subcategory']);
+        }
+
+        $stmt->bindParam(':pageSize', $pageSize, PDO::PARAM_INT);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
             $totalRecords = getTotalRecordCount($conn);
@@ -166,9 +178,35 @@ switch($method) {
 }
 
 function getTotalRecordCount($conn) {
-    $countQuery = "SELECT COUNT(*) as total FROM recordings";
-    $countResult = $conn->query($countQuery);
-    $countData = $countResult->fetch(PDO::FETCH_ASSOC);
-    return $countData['total'];
+  $sql = "SELECT COUNT(*) as total FROM recordings WHERE 1"; // Start the query
+  // Check if category and subcategory are provided and not empty
+  if (isset($_GET['category']) && !empty($_GET['category']) && $_GET['category'] !== 'Összes') {
+      $sql .= " AND tipus = :category";
+  }
+  if (isset($_GET['subcategory']) && !empty($_GET['subcategory'])) {
+      $sql .= " AND kategoria = :subcategory";
+  }
+  $stmt = $conn->prepare($sql);
+
+  // Bind parameters if they are set
+  if (isset($_GET['category']) && !empty($_GET['category']) && $_GET['category'] !== 'Összes') {
+      $stmt->bindParam(':category', $_GET['category']);
+  }
+  if (isset($_GET['subcategory']) && !empty($_GET['subcategory'])) {
+      $stmt->bindParam(':subcategory', $_GET['subcategory']);
+  }
+
+  $stmt->execute();
+  $countData = $stmt->fetch(PDO::FETCH_ASSOC);
+  return $countData['total'];
+}
+
+function getDefaultRecordings($conn, $pageSize, $offset) {
+    $sql = "SELECT * FROM recordings ORDER BY datum DESC LIMIT :pageSize OFFSET :offset";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':pageSize', $pageSize, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
